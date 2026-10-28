@@ -1,0 +1,32 @@
+services:
+
+  db:
+    image: postgres:16-alpine
+    container_name: tmechat-db
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+      POSTGRES_DB: tmechat
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data   # data přežijí restart kontejneru
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: tmechat-app
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy   # počká dokud DB není připravená
+    restart: unless-stopped
+
+volumes:
+  db_data:
